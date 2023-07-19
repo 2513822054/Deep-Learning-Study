@@ -163,6 +163,8 @@ def show_linears(data,
         raise TypeError("TypeError: data must be a ndarry or torch.tensor; got: %s"%type(data))
     if isinstance(data, torch.Tensor):
         data = data.numpy()
+    if dim == 1:
+        data = data.T
     shape = data.shape
     if inputx != None:
         if not(isinstance(inputx, np.ndarray) or isinstance(inputx, torch.Tensor)):
