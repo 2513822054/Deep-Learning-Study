@@ -4,7 +4,6 @@ from torch.utils import data
 from torch import nn
 import numpy as np
 import os
-from d2l import torch as d2l
 import sys
 sys.path.append("./")
 from myDeepLearning import myPlot,myTools

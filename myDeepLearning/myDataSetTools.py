@@ -8,6 +8,11 @@ from myDeepLearning import myPlot,myTools
 import random
 import pandas as pd
 import os
+import hashlib
+import tarfile,zipfile
+import requests
+import zipfile,tarfile
+import subprocess
 
 def data_batch(inputs,outputs,batch_size,israndom = True):
     '''将数据集分为多个batch'''
@@ -81,3 +86,32 @@ def load_data_fashion_mnist(batch_size,resize = None):
     mnist_test = torchvision.datasets.FashionMNIST(root='../data',train=False,transform = trans,download = True)
     return (data.DataLoader(mnist_train, batch_size, shuffle=True,num_workers=0),
             data.DataLoader(mnist_test, batch_size, shuffle=False,num_workers=0))
+
+
+learndataLoc = 'G:\\GraduateDoc\\acadamic\\pytorchLearning\\DataSet\\learning\\'
+def download_kaggle(command,path=learndataLoc,dataSetName=None,deleteZip=False):
+    oldLoc = os.getcwd()
+    os.chdir(path)
+    ret = subprocess.check_output(command,universal_newlines=True)
+    if ret.find('Downloading')!=0:
+        print("download error")
+        os.chdir(oldLoc)              #将当前路径改为原来的路径
+        return
+    endtar = ret.find('.tar')
+    endzip = ret.find('.zip')
+    if endtar == endzip == -1:
+        print("download error")
+        os.chdir(oldLoc)              #将当前路径改为原来的路径
+        return
+    if endtar != -1:
+        filename = ret[12:endtar+4]
+        file = tarfile.open(filename,'r')
+    elif endzip != -1:
+        filename = ret[12:endzip+4]
+        file = zipfile.ZipFile(filename,'r')
+
+    if dataSetName == None:
+        file.extractall('.\\'+filename[0:-4])
+    else:
+        file.extractall('.\\'+dataSetName)
+    os.chdir(oldLoc)              #将当前路径改为原来的路径
