@@ -35,7 +35,7 @@ def load_array(data_arrays, batch_size, is_train=True):
     dataset = data.TensorDataset(*data_arrays)
     return data.DataLoader(dataset, batch_size, shuffle=is_train)
 
-def create_dataset(inputs,outputs,relativePath = "..",docname = "data",filename = "dataset.csv",headname = ""):
+def create_dataset_regression(inputs,outputs,relativePath = "..",docname = "data",filename = "dataset.csv",headname = ""):
     #创建数据集     数据集一般用csv格式文件保存，csv格式以逗号隔开各数据 以\n隔开行
     shape1 = inputs.shape
     shape2 = outputs.shape
@@ -67,7 +67,7 @@ def create_dataset(inputs,outputs,relativePath = "..",docname = "data",filename 
             wtstr = ''.join(wtstr)
             f.write(wtstr)
 
-def read_dataset(inputnum,relativePath = "..",docname = "data",filename = "dataset.csv"):
+def read_dataset_regression(inputnum,relativePath = "..",docname = "data",filename = "dataset.csv"):
     '''
     读取数据集
     inputnums表示输入个数,即数据集每一项输入的维度
@@ -75,6 +75,11 @@ def read_dataset(inputnum,relativePath = "..",docname = "data",filename = "datas
     data_file = os.path.join(relativePath,docname,filename)
     data=pd.read_csv(data_file)
     return torch.Tensor(data.iloc[:,0:inputnum].values),torch.Tensor(data.iloc[:,inputnum:data.shape[1]].values)
+
+def read_dataset_pandas(path,filename):
+    data_file = os.path.join(path+filename)
+    data = pd.read_csv(data_file)
+    return data
 
 def load_data_fashion_mnist(batch_size,resize = None):
     '''下载fashion数据集 加载到dataloader中并返回'''
@@ -92,6 +97,7 @@ learndataLoc = 'G:\\GraduateDoc\\acadamic\\pytorchLearning\\DataSet\\learning\\'
 def download_kaggle(command,path=learndataLoc,dataSetName=None,deleteZip=False):
     oldLoc = os.getcwd()
     os.chdir(path)
+    returnname = {}
     ret = subprocess.check_output(command,universal_newlines=True)
     if ret.find('Downloading')!=0:
         print("download error")
@@ -103,15 +109,23 @@ def download_kaggle(command,path=learndataLoc,dataSetName=None,deleteZip=False):
         print("download error")
         os.chdir(oldLoc)              #将当前路径改为原来的路径
         return
+    filename = ""
     if endtar != -1:
         filename = ret[12:endtar+4]
         file = tarfile.open(filename,'r')
     elif endzip != -1:
         filename = ret[12:endzip+4]
         file = zipfile.ZipFile(filename,'r')
-
     if dataSetName == None:
         file.extractall('.\\'+filename[0:-4])
+        returnname["foldername"] = ret[12:endzip]
     else:
         file.extractall('.\\'+dataSetName)
+        returnname["foldername"] = dataSetName
+    file.close()
+    if deleteZip==True:                         #删除压缩文件
+        os.remove(filename)
+        os.chdir('.\\'+returnname['foldername'])
+    returnname["filename"] = os.listdir()       #取出所有文件名
     os.chdir(oldLoc)              #将当前路径改为原来的路径
+    return returnname
