@@ -20,47 +20,6 @@ def data_batch(inputs,outputs,batch_size,israndom = True):
         batch_indices = torch.tensor(indices[i:min(i+batch_size,allnum)])
         yield inputs[batch_indices],outputs[batch_indices]
 
-def create_dataset(inputs,outputs,relativePath = "..",docname = "data",filename = "dataset.csv",headname = ""):
-    #创建数据集     数据集一般用csv格式文件保存，csv格式以逗号隔开各数据 以\n隔开行
-    shape1 = inputs.shape
-    shape2 = outputs.shape
-    if shape1[0] != shape2[0]:
-        raise ValueError("shape1 and shape2 must be the same length.")
-    os.makedirs(os.path.join(relativePath,docname),exist_ok=True)
-    data_file = os.path.join(relativePath,docname,filename)
-    with open(data_file,'w') as f:
-        if headname == '':
-            wtstr = ""
-            for i in range(shape1[1]):
-                wtstr += 'x'+str(i)+','
-            for i in range(shape2[1]):
-                wtstr += 'y'+str(i)+','
-            wtstr = list(wtstr)
-            wtstr[-1] = '\n'
-            wtstr = ''.join(wtstr)
-            f.write(wtstr)
-        else:
-            f.write(headname+'\n')
-        for i in range(shape1[0]):
-            wtstr = ''
-            for j in range(shape1[1]):
-                wtstr += '%f,'%inputs[i][j]
-            for j in range(shape2[1]):
-                wtstr += '%f,'%outputs[i][j]
-            wtstr = list(wtstr)
-            wtstr[-1] = '\n'
-            wtstr = ''.join(wtstr)
-            f.write(wtstr)
-
-def read_dataset(inputnum,relativePath = "..",docname = "data",filename = "dataset.csv"):
-    '''
-    读取数据集
-    inputnums表示输入个数,即数据集每一项输入的维度
-    '''
-    data_file = os.path.join(relativePath,docname,filename)
-    data=pd.read_csv(data_file)
-    return torch.Tensor(data.iloc[:,0:inputnum].values),torch.Tensor(data.iloc[:,inputnum:data.shape[1]].values)
-
 #实用类 累加器
 class Accumulator:
     """累加器讲解博客：https://www.cnblogs.com/zangwhe/p/17052548.html"""
@@ -105,10 +64,14 @@ def train_epoch(net,train_iter,loss,updater):
     '''训练一轮'''
     if isinstance(net,torch.nn.Module):
         net.train()
+    total_loss = 0.0
+    num_samples = 0
     for X,y in train_iter:
         # 计算梯度并更新参数
         y_hat = net(X)
         l = loss(y_hat,y)
+        total_loss += l.sum()
+        num_samples += y.numel()
         if isinstance(updater,torch.optim.Optimizer):
             updater.zero_grad()
             l.mean().backward()
@@ -116,6 +79,7 @@ def train_epoch(net,train_iter,loss,updater):
         else:
             l.sum().backward()
             updater(X.shape[0])
+    return total_loss/num_samples
 
 def train_epoc_classify(net,train_iter,loss,updater):
     '''分类问题训练一轮'''
