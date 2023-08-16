@@ -61,7 +61,10 @@ def evaluate_accuracy(net,data_iter):
         return metric[0]/metric[1]
 
 def train_epoch(net,train_iter,loss,updater):
-    '''训练一轮'''
+    '''
+    训练一轮
+    默认loss要求平均,不求平均保留原有长度也可以,求和会导致返回的损失值错误
+    '''
     if isinstance(net,torch.nn.Module):
         net.train()
     total_loss = 0.0
@@ -69,9 +72,16 @@ def train_epoch(net,train_iter,loss,updater):
     for X,y in train_iter:
         # 计算梯度并更新参数
         y_hat = net(X)
+        print(X[:,:20])
+        print(y_hat)
         l = loss(y_hat,y)
-        total_loss += l.sum()
+        if isinstance(loss,torch.nn.modules.loss._Loss):
+            if loss.reduction == 'none':
+                l = l.mean()
+            elif loss.reduction == 'sum':
+                l = l/y_hat.shape[0]
         num_samples += y.numel()
+        total_loss += float(l*y_hat.shape[0])
         if isinstance(updater,torch.optim.Optimizer):
             updater.zero_grad()
             l.mean().backward()
